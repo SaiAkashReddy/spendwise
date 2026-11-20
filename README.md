@@ -374,6 +374,3 @@ SpendWise is deliberately architected as a clean, beginner-friendly application 
 
 ---
 
-## 📄 License
-
-This project is open-source and available under the [MIT License](file:///d:/Desktop/Akash/LICENSE). Feel free to use, modify, and learn from it!
