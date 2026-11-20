@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES, PAYMENT_METHODS, toInputDateFormat } from '../utils/constants.js';
 import { useExpenses } from '../context/ExpenseContext.jsx';
-import { CheckIcon, AlertCircleIcon } from './Icons.jsx';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const ExpenseForm = ({
   initialData = null,
@@ -116,21 +116,20 @@ const ExpenseForm = ({
         setSuccessMessage('Expense updated successfully!');
       } else {
         await addExpense(payload);
-        setSuccessMessage('Expense created successfully!');
+        setSuccessMessage('Expense recorded successfully!');
         resetForm();
       }
 
-      // Trigger callback if provided
       if (onSuccess) {
         setTimeout(() => {
           onSuccess();
-        }, 400);
+        }, 350);
       }
     } catch (err) {
       const message =
         err.userMessage ||
         err.response?.data?.message ||
-        'Failed to save expense. Please verify server connection.';
+        'Failed to save expense. Please check your connection.';
       setServerError(message);
     } finally {
       setIsSubmitting(false);
@@ -138,31 +137,31 @@ const ExpenseForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Success Notification */}
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      {/* Inline Success Notice */}
       {successMessage && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm rounded-xl p-3 flex items-center space-x-2">
-          <CheckIcon className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm rounded-xl p-3 flex items-center space-x-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{successMessage}</span>
         </div>
       )}
 
-      {/* Server Error Notification */}
+      {/* Inline Server Error Notice */}
       {serverError && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm rounded-xl p-3 flex items-start space-x-2">
-          <AlertCircleIcon className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm rounded-xl p-3 flex items-start space-x-2 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
           <span>{serverError}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Amount Field */}
+        {/* Amount Input */}
         <div>
-          <label htmlFor="amount" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-            Amount (₹) *
+          <label htmlFor="amount" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Amount (INR) <span className="text-rose-500">*</span>
           </label>
-          <div className="relative rounded-xl shadow-xs">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-semibold">
+          <div className="relative rounded-xl shadow-2xs">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-sm">
               ₹
             </div>
             <input
@@ -172,30 +171,36 @@ const ExpenseForm = ({
               min="0.01"
               placeholder="0.00"
               value={amount}
+              aria-invalid={Boolean(errors.amount)}
+              aria-describedby={errors.amount ? 'amount-error' : undefined}
               onChange={(e) => {
                 setAmount(e.target.value);
                 if (errors.amount) setErrors((prev) => ({ ...prev, amount: null }));
               }}
               className={`block w-full pl-8 pr-3 py-2.5 bg-slate-50 border rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
                 errors.amount
-                  ? 'border-rose-300 focus:ring-rose-500 bg-rose-50/30'
+                  ? 'border-rose-300 focus:ring-rose-500 bg-rose-50/20'
                   : 'border-slate-200 focus:ring-emerald-500 focus:border-transparent'
               }`}
             />
           </div>
           {errors.amount && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.amount}</p>
+            <p id="amount-error" className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center space-x-1">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{errors.amount}</span>
+            </p>
           )}
         </div>
 
-        {/* Category Field */}
+        {/* Category Dropdown */}
         <div>
-          <label htmlFor="category" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-            Category *
+          <label htmlFor="category" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Category <span className="text-rose-500">*</span>
           </label>
           <select
             id="category"
             value={category}
+            aria-invalid={Boolean(errors.category)}
             onChange={(e) => {
               setCategory(e.target.value);
               if (errors.category) setErrors((prev) => ({ ...prev, category: null }));
@@ -213,7 +218,10 @@ const ExpenseForm = ({
             ))}
           </select>
           {errors.category && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.category}</p>
+            <p className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center space-x-1">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{errors.category}</span>
+            </p>
           )}
         </div>
       </div>
@@ -221,10 +229,10 @@ const ExpenseForm = ({
       {/* Description Field */}
       <div>
         <div className="flex justify-between items-center mb-1">
-          <label htmlFor="description" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            Description *
+          <label htmlFor="description" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Description <span className="text-rose-500">*</span>
           </label>
-          <span className="text-[10px] text-slate-400">
+          <span className={`text-[10px] font-semibold ${description.length >= 190 ? 'text-rose-500' : 'text-slate-400'}`}>
             {description.length}/200
           </span>
         </div>
@@ -232,33 +240,39 @@ const ExpenseForm = ({
           type="text"
           id="description"
           maxLength={200}
-          placeholder="e.g. Grocery items, Flight ticket, Electricity bill"
+          placeholder="e.g. Flight to Mumbai, Team Lunch, Electricity Bill"
           value={description}
+          aria-invalid={Boolean(errors.description)}
+          aria-describedby={errors.description ? 'desc-error' : undefined}
           onChange={(e) => {
             setDescription(e.target.value);
             if (errors.description) setErrors((prev) => ({ ...prev, description: null }));
           }}
           className={`block w-full px-3 py-2.5 bg-slate-50 border rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
             errors.description
-              ? 'border-rose-300 focus:ring-rose-500 bg-rose-50/30'
+              ? 'border-rose-300 focus:ring-rose-500 bg-rose-50/20'
               : 'border-slate-200 focus:ring-emerald-500 focus:border-transparent'
           }`}
         />
         {errors.description && (
-          <p className="mt-1 text-xs text-rose-600 font-medium">{errors.description}</p>
+          <p id="desc-error" className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center space-x-1">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{errors.description}</span>
+          </p>
         )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Date Field */}
         <div>
-          <label htmlFor="date" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-            Date *
+          <label htmlFor="date" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Date <span className="text-rose-500">*</span>
           </label>
           <input
             type="date"
             id="date"
             value={date}
+            aria-invalid={Boolean(errors.date)}
             onChange={(e) => {
               setDate(e.target.value);
               if (errors.date) setErrors((prev) => ({ ...prev, date: null }));
@@ -270,13 +284,16 @@ const ExpenseForm = ({
             }`}
           />
           {errors.date && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.date}</p>
+            <p className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center space-x-1">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{errors.date}</span>
+            </p>
           )}
         </div>
 
         {/* Payment Method Field */}
         <div>
-          <label htmlFor="paymentMethod" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          <label htmlFor="paymentMethod" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
             Payment Method
           </label>
           <select
@@ -294,14 +311,14 @@ const ExpenseForm = ({
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Buttons */}
       <div className="pt-2 flex items-center justify-end space-x-3">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -309,12 +326,12 @@ const ExpenseForm = ({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-emerald-200 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
+          className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm shadow-emerald-200 transition-all hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500 disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>{isEditing ? 'Updating...' : 'Saving...'}</span>
+              <span>{isEditing ? 'Updating...' : 'Recording...'}</span>
             </>
           ) : (
             <span>{isEditing ? 'Update Expense' : 'Save Expense'}</span>
