@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { formatINR, CATEGORY_HEX_COLORS } from '../utils/constants.js';
-import { TagIcon } from './Icons.jsx';
+import { Tag } from 'lucide-react';
 
 // Custom Tooltip for the Donut Chart
 const CustomTooltip = ({ active, payload }) => {
@@ -51,7 +51,7 @@ const CategoryDonutChart = ({ categoryTotals = [], totalAmount = 0 }) => {
         </div>
         <div className="flex flex-col items-center justify-center my-auto py-8 text-center">
           <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
-            <TagIcon className="w-6 h-6" />
+            <Tag className="w-6 h-6" />
           </div>
           <p className="text-sm font-semibold text-slate-700">No category data yet</p>
           <p className="text-xs text-slate-400 max-w-xs mt-1">

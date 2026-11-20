@@ -10,7 +10,7 @@ import {
   Cell,
 } from 'recharts';
 import { formatINR, formatMonthYear, getLastNMonths } from '../utils/constants.js';
-import { CalendarIcon } from './Icons.jsx';
+import { Calendar } from 'lucide-react';
 
 // Custom Tooltip for the Monthly Bar Chart
 const CustomTooltip = ({ active, payload, label }) => {
@@ -70,7 +70,7 @@ const MonthlyBarChart = ({ monthlyTotals = [] }) => {
         </div>
         <div className="flex flex-col items-center justify-center my-auto py-8 text-center">
           <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
-            <CalendarIcon className="w-6 h-6" />
+            <Calendar className="w-6 h-6" />
           </div>
           <p className="text-sm font-semibold text-slate-700">No monthly history yet</p>
           <p className="text-xs text-slate-400 max-w-xs mt-1">
