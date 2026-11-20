@@ -60,6 +60,17 @@ export const CATEGORY_COLORS = {
   },
 };
 
+// Hex colors for Recharts visualizations
+export const CATEGORY_HEX_COLORS = {
+  Food: '#f59e0b',          // Amber
+  Travel: '#3b82f6',        // Blue
+  Shopping: '#a855f7',      // Purple
+  Bills: '#f43f5e',         // Rose
+  Entertainment: '#ec4899', // Pink
+  Health: '#10b981',        // Emerald
+  Others: '#64748b',        // Slate
+};
+
 export const PAYMENT_METHOD_BADGES = {
   Cash: 'bg-green-100 text-green-800',
   UPI: 'bg-sky-100 text-sky-800',
@@ -106,4 +117,53 @@ export const toInputDateFormat = (date = new Date()) => {
   const d = new Date(date);
   if (isNaN(d.getTime())) return new Date().toISOString().split('T')[0];
   return d.toISOString().split('T')[0];
+};
+
+/**
+ * Safely extracts the YYYY-MM month key from an expense date string
+ * without timezone boundary distortion.
+ */
+export const getExpenseMonthKey = (dateVal) => {
+  if (!dateVal) return '';
+  if (typeof dateVal === 'string' && dateVal.length >= 7) {
+    return dateVal.slice(0, 7);
+  }
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+};
+
+/**
+ * Converts a "YYYY-MM" month key into a human-readable format
+ * e.g. "2026-11" -> "Nov 2026"
+ */
+export const formatMonthYear = (monthKey) => {
+  if (!monthKey || typeof monthKey !== 'string') return '';
+  const parts = monthKey.split('-');
+  if (parts.length < 2) return monthKey;
+  const year = parts[0];
+  const monthNum = parseInt(parts[1], 10) - 1;
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  return `${monthNames[monthNum] || parts[1]} ${year}`;
+};
+
+/**
+ * Returns a chronological list of the last N months formatted as YYYY-MM
+ * Useful for filling in empty months in charts.
+ */
+export const getLastNMonths = (n = 6) => {
+  const months = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    months.push(`${y}-${m}`);
+  }
+  return months;
 };

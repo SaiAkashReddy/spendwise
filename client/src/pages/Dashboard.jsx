@@ -5,7 +5,9 @@ import ExpenseList from '../components/ExpenseList.jsx';
 import ExpenseForm from '../components/ExpenseForm.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
-import { formatINR, CATEGORY_COLORS } from '../utils/constants.js';
+import CategoryDonutChart from '../components/CategoryDonutChart.jsx';
+import MonthlyBarChart from '../components/MonthlyBarChart.jsx';
+import { formatINR, getExpenseMonthKey, formatMonthYear } from '../utils/constants.js';
 import {
   WalletIcon,
   TrendingUpIcon,
@@ -26,25 +28,52 @@ const Dashboard = () => {
     openAddModal,
   } = useExpenses();
 
-  // Latest 5 expenses for quick dashboard preview
+  // Current calendar month key (e.g. "2026-11")
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }, []);
+
+  // 1. Total spending across all recorded expenses
+  const totalSpending = summary.totalAmount || 0;
+
+  // 2. Current month's spending
+  const currentMonthSpending = useMemo(() => {
+    if (summary.currentMonthTotal !== undefined && summary.currentMonthTotal > 0) {
+      return summary.currentMonthTotal;
+    }
+    // Reliable client-side computation from active expenses
+    return expenses
+      .filter((e) => getExpenseMonthKey(e.date) === currentMonthKey)
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  }, [summary.currentMonthTotal, expenses, currentMonthKey]);
+
+  // 3. Number of expenses
+  const totalCount = summary.totalExpenses || expenses.length;
+
+  // 4. Highest-spending category
+  const topCategory = useMemo(() => {
+    if (summary.highestCategory && summary.highestCategoryAmount) {
+      return {
+        category: summary.highestCategory,
+        total: summary.highestCategoryAmount,
+      };
+    }
+    if (summary.categoryTotals && summary.categoryTotals.length > 0) {
+      return summary.categoryTotals[0];
+    }
+    return null;
+  }, [summary]);
+
+  // Recent 5 expenses for quick dashboard preview
   const recentExpenses = useMemo(() => {
     return expenses.slice(0, 5);
   }, [expenses]);
 
-  // Top category computation
-  const topCategory = useMemo(() => {
-    if (!summary.categoryTotals || summary.categoryTotals.length === 0) return null;
-    return summary.categoryTotals[0]; // Already sorted descending by total in backend
-  }, [summary]);
-
-  // Average expense amount computation
-  const averageExpense = useMemo(() => {
-    if (!summary.totalExpenses || summary.totalExpenses === 0) return 0;
-    return summary.totalAmount / summary.totalExpenses;
-  }, [summary]);
-
   if (loading && expenses.length === 0) {
-    return <LoadingSpinner message="Loading your dashboard..." size="lg" />;
+    return <LoadingSpinner message="Loading your dashboard analytics..." size="lg" />;
   }
 
   return (
@@ -56,7 +85,7 @@ const Dashboard = () => {
             Dashboard
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Overview of your personal spending, recent transactions, and category breakdowns.
+            Analytics, monthly spending trends, and category distribution.
           </p>
         </div>
         <button
@@ -71,7 +100,7 @@ const Dashboard = () => {
       {/* Global Error Banner if any */}
       {error && <ErrorMessage message={error} onRetry={fetchExpenses} />}
 
-      {/* 4 Metric Summary Cards */}
+      {/* 4 Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Spending */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
@@ -84,14 +113,32 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {formatINR(summary.totalAmount)}
+            {formatINR(totalSpending)}
           </div>
           <p className="mt-1.5 text-xs text-slate-400">
-            Across {summary.totalExpenses} total transactions
+            Lifetime recorded expenditure
           </p>
         </div>
 
-        {/* Card 2: Total Expenses Count */}
+        {/* Card 2: Current Month Spending */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between text-slate-400 mb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              {formatMonthYear(currentMonthKey)} Spending
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+              <CalendarIcon className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            {formatINR(currentMonthSpending)}
+          </div>
+          <p className="mt-1.5 text-xs text-slate-400">
+            Current calendar month
+          </p>
+        </div>
+
+        {/* Card 3: Total Expenses Count */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-slate-400 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -102,14 +149,14 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {summary.totalExpenses}
+            {totalCount}
           </div>
           <p className="mt-1.5 text-xs text-slate-400">
-            Logged expense transactions
+            Recorded transactions
           </p>
         </div>
 
-        {/* Card 3: Top Category */}
+        {/* Card 4: Highest-Spending Category */}
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between text-slate-400 mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -123,32 +170,28 @@ const Dashboard = () => {
             {topCategory ? topCategory.category : '—'}
           </div>
           <p className="mt-1.5 text-xs text-slate-400">
-            {topCategory ? formatINR(topCategory.total) : 'No expenses recorded'}
-          </p>
-        </div>
-
-        {/* Card 4: Average Expense */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between text-slate-400 mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Average Expense
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <TrendingUpIcon className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            {formatINR(averageExpense)}
-          </div>
-          <p className="mt-1.5 text-xs text-slate-400">
-            Average per transaction
+            {topCategory ? `${formatINR(topCategory.total)} spent` : 'No expenses recorded'}
           </p>
         </div>
       </div>
 
-      {/* Main Grid: Add Expense Card + Recent Expenses */}
+      {/* Analytics Section: Two Recharts Visualizations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Category Donut Chart */}
+        <CategoryDonutChart
+          categoryTotals={summary.categoryTotals || []}
+          totalAmount={totalSpending}
+        />
+
+        {/* Monthly Spending Bar Chart */}
+        <MonthlyBarChart
+          monthlyTotals={summary.monthlyTotals || []}
+        />
+      </div>
+
+      {/* Bottom Section: Quick Add Form + Recent Transactions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Quick Add Expense Form Card (Left Column) */}
+        {/* Quick Add Expense Form Card */}
         <div className="lg:col-span-1 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs h-fit">
           <div className="flex items-center space-x-2.5 mb-4 pb-3 border-b border-slate-100">
             <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
@@ -156,7 +199,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">Quick Add Expense</h2>
-              <p className="text-xs text-slate-500">Record an expense immediately</p>
+              <p className="text-xs text-slate-500">Record a spending transaction</p>
             </div>
           </div>
 
@@ -166,7 +209,7 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Recent Expenses List (Right Column - 2 Cols) */}
+        {/* Recent Transactions List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between pb-1">
             <div>
@@ -189,64 +232,11 @@ const Dashboard = () => {
             onEdit={openEditModal}
             onAddClick={openAddModal}
             emptyTitle="No recent transactions"
-            emptyDescription="Use the form on the left to record your first expense transaction."
+            emptyDescription="Use the form on the left or click 'New Expense' to record your first transaction."
             viewMode="auto"
           />
         </div>
       </div>
-
-      {/* Category Breakdown Section */}
-      {summary.categoryTotals && summary.categoryTotals.length > 0 && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
-          <h3 className="text-base font-bold text-slate-900 mb-4">
-            Spending by Category
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {summary.categoryTotals.map((item) => {
-              const color = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Others;
-              const percentage = summary.totalAmount > 0
-                ? Math.round((item.total / summary.totalAmount) * 100)
-                : 0;
-
-              return (
-                <div
-                  key={item.category}
-                  className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-4 flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${color.bg} ${color.text} ${color.border}`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />
-                      <span>{item.category}</span>
-                    </span>
-                    <span className="text-xs font-bold text-slate-400">
-                      {percentage}%
-                    </span>
-                  </div>
-
-                  <div className="mt-2">
-                    <div className="text-lg font-bold text-slate-900">
-                      {formatINR(item.total)}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {item.count} {item.count === 1 ? 'transaction' : 'transactions'}
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="w-full bg-slate-200 rounded-full h-1.5 mt-3 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${color.dot}`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

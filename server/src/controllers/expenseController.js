@@ -83,11 +83,23 @@ export const getExpenseSummary = async (req, res, next) => {
     const totalAmount = overallStats.length > 0 ? Number(overallStats[0].totalAmount.toFixed(2)) : 0;
     const totalExpenses = overallStats.length > 0 ? overallStats[0].totalExpenses : 0;
 
+    // Current month string formatted as YYYY-MM
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
+    const currentMonthEntry = monthlyTotals.find((m) => m.month === currentMonthStr);
+    const currentMonthTotal = currentMonthEntry ? Number(currentMonthEntry.total.toFixed(2)) : 0;
+
+    // Highest-spending category
+    const highestCategory = categoryTotals.length > 0 ? categoryTotals[0].category : null;
+    const highestCategoryAmount = categoryTotals.length > 0 ? categoryTotals[0].total : 0;
+
     res.status(200).json({
       success: true,
       data: {
         totalAmount,
         totalExpenses,
+        currentMonthTotal,
+        highestCategory,
+        highestCategoryAmount,
         categoryTotals,
         monthlyTotals,
       },
